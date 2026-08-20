@@ -1,5 +1,7 @@
 package models;
 
+import utils.UUIDGenerator;
+
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -16,7 +18,7 @@ public class Medico {
 
     public Medico(String nombres, String apellidos, String especialidad, String telefono,
                   String correoElectronico, LocalTime horarioInicio, LocalTime horarioFin) {
-        this.uuid = UUID.randomUUID().toString();
+        this.uuid = UUIDGenerator.generar();
         this.nombres = nombres;
         this.apellidos = apellidos;
         this.especialidad = especialidad;

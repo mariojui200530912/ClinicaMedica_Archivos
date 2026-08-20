@@ -2,11 +2,11 @@ package controllers;
 
 import models.Medico;
 import persistence.MedicoDAO;
+import utils.LoggerSystem;
 
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MedicoController {
     private final MedicoDAO medicoDAO;
@@ -25,11 +25,15 @@ public class MedicoController {
             throw new IllegalArgumentException("El horario de inicio debe ser anterior al horario de fin.");
         }
 
+        if (medicoDAO.existeMedicoDuplicado(nombres, apellidos, especialidad)) {
+            throw new Exception("Ya existe un médico registrado con ese nombre, apellido y especialidad.");
+        }
+
         Medico nuevoMedico = new Medico(nombres, apellidos, especialidad, telefono,
                 correoElectronico, horarioInicio, horarioFin);
 
         medicoDAO.registrarMedico(nuevoMedico);
-        // Aquí se llamaría al LoggerSystem para registrar la acción de creación.
+        LoggerSystem.registrarAccion("MÉDICOS", "CREACIÓN", "Se registró el médico: " + nombres + " " + apellidos);
     }
 
     public List<Medico> consultarTodosLosMedicos() throws IOException {
@@ -75,7 +79,7 @@ public class MedicoController {
         if (!actualizado) {
             throw new Exception("Error al actualizar el médico en el archivo.");
         }
-        // Aquí se registraría la actualización en el log.
+        LoggerSystem.registrarAccion("MÉDICOS", "ACTUALIZACIÓN", "Se actualizaron los datos del médico UUID: " + uuid);
     }
 
     public void cambiarEstadoMedico(String uuid, boolean nuevoEstado) throws Exception {
@@ -87,7 +91,7 @@ public class MedicoController {
 
         medicoExistente.setActivo(nuevoEstado);
         medicoDAO.actualizarMedico(medicoExistente);
-        // Aquí se registraría el cambio de estado en el log[cite: 1].
+        LoggerSystem.registrarAccion("MÉDICOS", "ACTUALIZACIÓN", "Se cambió el estado a " + (nuevoEstado ? "Activo" : "Inactivo") + " del médico UUID: " + uuid);
     }
 
     private void validarCamposObligatorios(String nombres, String apellidos, String especialidad) {

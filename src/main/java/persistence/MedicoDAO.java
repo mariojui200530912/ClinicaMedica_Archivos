@@ -80,6 +80,27 @@ public class MedicoDAO extends AbstractFileDAO{
         return false;
     }
 
+    public Medico buscarPorUuid(String uuidBuscado) throws IOException {
+        int longitudUuid = LONGITUDES[IDX_UUID];
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posicionActual = raf.getFilePointer();
+
+                String uuidLeido = FixedLengthStringUtil.readFixedString(raf, longitudUuid);
+
+                if (uuidLeido.equals(uuidBuscado)) {
+                    raf.seek(posicionActual);
+                    return leerRegistro(raf);
+                }
+
+                raf.seek(posicionActual + recordSize);
+            }
+        }
+        return null;
+    }
+
     public List<Medico> buscarGeneral(String criterio) throws IOException {
         List<Medico> resultados = new ArrayList<>();
         String criterioLower = criterio.toLowerCase();
@@ -159,6 +180,36 @@ public class MedicoDAO extends AbstractFileDAO{
             }
         }
         return resultados;
+    }
+
+    public boolean existeMedicoDuplicado(String nombresBuscados, String apellidosBuscados, String especialidadBuscada) throws IOException {
+        String nomLower = nombresBuscados.toLowerCase();
+        String apeLower = apellidosBuscados.toLowerCase();
+        String espLower = especialidadBuscada.toLowerCase();
+
+        int offsetNombres = calcularOffset(IDX_NOMBRES);
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posicionActual = raf.getFilePointer();
+
+                raf.seek(posicionActual + offsetNombres);
+
+                String nombresLeidos = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_NOMBRES]);
+                String apellidosLeidos = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_APELLIDOS]);
+                String especialidadLeida = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_ESPECIALIDAD]);
+
+                if (nombresLeidos.toLowerCase().equals(nomLower) &&
+                        apellidosLeidos.toLowerCase().equals(apeLower) &&
+                        especialidadLeida.toLowerCase().equals(espLower)) {
+                    return true;
+                }
+
+                raf.seek(posicionActual + recordSize);
+            }
+        }
+        return false;
     }
 
     private void escribirRegistro(RandomAccessFile raf, Medico medico) throws IOException {
