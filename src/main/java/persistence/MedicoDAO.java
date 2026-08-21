@@ -9,7 +9,9 @@ import java.io.RandomAccessFile;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MedicoDAO extends AbstractFileDAO{
     private static final String FILE_PATH = "data/medicos.dat";
@@ -39,9 +41,7 @@ public class MedicoDAO extends AbstractFileDAO{
     private static final int BYTES_EXTRA = 1;
 
     public MedicoDAO() {
-        super(LONGITUDES, BYTES_EXTRA);
-        File file = new File(FILE_PATH);
-        file.getParentFile().mkdirs();
+        super(LONGITUDES, BYTES_EXTRA, FILE_PATH);
     }
 
     public void registrarMedico(Medico medico) throws IOException {
@@ -210,6 +210,29 @@ public class MedicoDAO extends AbstractFileDAO{
             }
         }
         return false;
+    }
+
+    public Map<String, String> obtenerMapaEspecialidades() throws IOException {
+        Map<String, String> mapaEspecialidades = new HashMap<>();
+        int offsetEspecialidad = calcularOffset(IDX_ESPECIALIDAD);
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual);
+                String uuid = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID]);
+
+                raf.seek(posActual + offsetEspecialidad);
+                String especialidad = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_ESPECIALIDAD]);
+
+                mapaEspecialidades.put(uuid, especialidad);
+
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return mapaEspecialidades;
     }
 
     private void escribirRegistro(RandomAccessFile raf, Medico medico) throws IOException {

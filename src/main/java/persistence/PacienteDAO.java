@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 public class PacienteDAO extends AbstractFileDAO{
     private static final String FILE_PATH = "data/pacientes.dat";
@@ -38,9 +39,7 @@ public class PacienteDAO extends AbstractFileDAO{
     private static final int BYTES_EXTRA = 1;
 
     public PacienteDAO() {
-        super(LONGITUDES, BYTES_EXTRA);
-        File file = new File(FILE_PATH);
-        file.getParentFile().mkdirs();
+        super(LONGITUDES, BYTES_EXTRA, FILE_PATH);
     }
 
     public void registrarPaciente(Paciente paciente) throws IOException {
@@ -157,7 +156,29 @@ public class PacienteDAO extends AbstractFileDAO{
         return resultados;
     }
 
-    // --- Lectura y Escritura de Bloques ---
+    public TreeSet<String> obtenerArbolIdsPacientes() throws IOException {
+        TreeSet<String> arbolIds = new TreeSet<>();
+
+        int offsetId = calcularOffset(IDX_ID);
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) {
+                    raf.seek(posActual + offsetId);
+                    String id = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_ID]);
+                    arbolIds.add(id);
+                }
+
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return arbolIds;
+    }
 
     private void escribirRegistro(RandomAccessFile raf, Paciente p) throws IOException {
         FixedLengthStringUtil.writeFixedString(raf, p.getIdentificacion(), LONGITUDES[IDX_ID]);

@@ -18,7 +18,7 @@ public class Cita {
     private boolean eliminado;
 
     public Cita(String identificacionPaciente, String uuidMedico, LocalDate fecha,
-                LocalTime horaInicio, String motivoConsulta) {
+                LocalTime horaInicio, String motivoConsulta, String observaciones) {
         this.uuid = UUIDGenerator.generar();
         this.identificacionPaciente = identificacionPaciente;
         this.uuidMedico = uuidMedico;
@@ -26,7 +26,7 @@ public class Cita {
         this.horaInicio = horaInicio;
         this.motivoConsulta = motivoConsulta;
         this.estado = EstadoCita.PROGRAMADA;
-        this.observaciones = "";
+        this.observaciones = observaciones;
         this.eliminado = false;
     }
 
@@ -44,6 +44,7 @@ public class Cita {
     }
 
     public String getUuid() { return uuid; }
+    public void setUuid(String uuid) { this.uuid = uuid; }
     public String getIdentificacionPaciente() { return identificacionPaciente; }
     public void setIdentificacionPaciente(String identificacionPaciente) { this.identificacionPaciente = identificacionPaciente; }
     public String getUuidMedico() { return uuidMedico; }

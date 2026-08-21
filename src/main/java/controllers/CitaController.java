@@ -25,7 +25,7 @@ public class CitaController {
 
 
     public void programarCita(String idPaciente, String uuidMedico, LocalDate fecha,
-                              LocalTime horaInicio, String motivo) throws Exception {
+                              LocalTime horaInicio, String motivo, String observaciones) throws Exception {
 
         if (motivo == null || motivo.trim().isEmpty()) {
             throw new IllegalArgumentException("El motivo de la consulta es obligatorio.");
@@ -49,7 +49,7 @@ public class CitaController {
             throw new Exception("El médico ya tiene una cita programada en esa fecha y hora.");
         }
 
-        Cita nuevaCita = new Cita(idPaciente, uuidMedico, fecha, horaInicio, motivo);
+        Cita nuevaCita = new Cita(idPaciente, uuidMedico, fecha, horaInicio, motivo, observaciones);
         citaDAO.registrarCita(nuevaCita);
         LoggerSystem.registrarAccion("CITAS", "CREACIÓN", "Se programó cita para el paciente ID: " + idPaciente);
     }

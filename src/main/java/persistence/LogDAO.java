@@ -30,7 +30,7 @@ public class LogDAO extends AbstractFileDAO{
     };
 
     public LogDAO() {
-        super(LONGITUDES, 0); // 0 bytes extra, puro texto
+        super(LONGITUDES, 0, FILE_PATH); // 0 bytes extra, puro texto
         File file = new File(FILE_PATH);
         file.getParentFile().mkdirs();
     }

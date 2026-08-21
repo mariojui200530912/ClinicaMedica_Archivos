@@ -10,8 +10,7 @@ import java.io.RandomAccessFile;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CitaDAO extends AbstractFileDAO{
     private static final String FILE_PATH = "data/citas.dat";
@@ -40,9 +39,7 @@ public class CitaDAO extends AbstractFileDAO{
     };
 
     public CitaDAO() {
-        super(LONGITUDES, BYTES_EXTRA);
-        File file = new File(FILE_PATH);
-        file.getParentFile().mkdirs();
+        super(LONGITUDES, BYTES_EXTRA,  FILE_PATH);
     }
 
     public void registrarCita(Cita cita) throws IOException {
@@ -221,6 +218,131 @@ public class CitaDAO extends AbstractFileDAO{
                 } else {
                     raf.seek(posicionActual + recordSize);
                 }
+            }
+        }
+        return resultados;
+    }
+
+    public Map<String, Long> contarCitasPorPaciente() throws IOException {
+        Map<String, Long> conteo = new HashMap<>();
+        int offsetIdPaciente = calcularOffset(IDX_ID_PACIENTE);
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) {
+                    raf.seek(posActual + offsetIdPaciente);
+                    String id = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_ID_PACIENTE]);
+                    conteo.put(id, conteo.getOrDefault(id, 0L) + 1);
+                }
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return conteo;
+    }
+
+    public Map<String, Long> contarCitasPorMedico() throws IOException {
+        Map<String, Long> conteo = new HashMap<>();
+        int offsetUuidMedico = calcularOffset(IDX_UUID_MEDICO); // Índice del UUID del médico
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) { // Si no está eliminada
+                    raf.seek(posActual + offsetUuidMedico);
+                    String uuid = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID_MEDICO]);
+                    conteo.put(uuid, conteo.getOrDefault(uuid, 0L) + 1);
+                }
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return conteo;
+    }
+
+    public Set<String> obtenerUuidsMedicosPorFecha(LocalDate fechaBusqueda) throws IOException {
+        Set<String> uuidsEnFecha = new HashSet<>();
+        int offsetUuidMedico = calcularOffset(IDX_UUID_MEDICO);
+        int offsetFecha = calcularOffset(IDX_FECHA);
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        String fechaStrBusqueda = fechaBusqueda.toString();
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) {
+                    raf.seek(posActual + offsetFecha);
+                    String fechaRegistro = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_FECHA]);
+
+                    if (fechaRegistro.equals(fechaStrBusqueda)) {
+                        raf.seek(posActual + offsetUuidMedico);
+                        String uuid = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID_MEDICO]);
+                        uuidsEnFecha.add(uuid);
+                    }
+                }
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return uuidsEnFecha;
+    }
+
+    public List<String> obtenerUuidsMedicosConCitas() throws IOException {
+        List<String> uuidsMedicos = new java.util.ArrayList<>();
+        int offsetUuidMedico = calcularOffset(IDX_UUID_MEDICO);
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) {
+                    raf.seek(posActual + offsetUuidMedico);
+                    uuidsMedicos.add(FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID_MEDICO]));
+                }
+                raf.seek(posActual + recordSize);
+            }
+        }
+        return uuidsMedicos;
+    }
+
+    public List<Cita> consultarCitasPorRango(LocalDate inicio, LocalDate fin) throws IOException {
+        List<Cita> resultados = new ArrayList<>();
+
+        String strInicio = inicio.toString();
+        String strFin = fin.toString();
+
+        int offsetFecha = calcularOffset(IDX_FECHA);
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "r")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posActual = raf.getFilePointer();
+
+                raf.seek(posActual + offsetEliminado);
+                if (!raf.readBoolean()) {
+                    raf.seek(posActual + offsetFecha);
+                    String fechaRegistro = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_FECHA]);
+
+                    if (fechaRegistro.compareTo(strInicio) >= 0 && fechaRegistro.compareTo(strFin) <= 0) {
+                        raf.seek(posActual);
+                        resultados.add(leerRegistro(raf));
+                    }
+                }
+                raf.seek(posActual + recordSize);
             }
         }
         return resultados;

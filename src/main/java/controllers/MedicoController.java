@@ -52,6 +52,18 @@ public class MedicoController {
         return medicoDAO.buscarPorEspecialidad(especialidad);
     }
 
+    public List<Medico> consultarMedicosActivos() throws IOException {
+        return medicoDAO.consultarTodos().stream()
+                .filter(Medico::isActivo)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<Medico> consultarMedicosInactivos() throws IOException {
+        return medicoDAO.consultarTodos().stream()
+                .filter(m -> !m.isActivo())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     public void modificarMedico(String uuid, String nombres, String apellidos, String especialidad,
                                 String telefono, String correoElectronico,
                                 LocalTime nuevoInicio, LocalTime nuevoFin) throws Exception {

@@ -46,6 +46,8 @@ public class Medico {
         return uuid;
     }
 
+    public void setUuid(String uuid) { this.uuid = uuid; }
+
     public String getNombres() {
         return nombres;
     }

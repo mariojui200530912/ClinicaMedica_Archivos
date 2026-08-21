@@ -16,9 +16,10 @@ public class MedicosPanel extends JPanel {
     private DefaultTableModel modeloTabla;
 
     private JTextField txtNombres, txtApellidos, txtEspecialidad, txtTelefono, txtCorreo, txtHorarioInicio, txtHorarioFin;
-    private JButton btnRegistrar, btnModificar, btnCambiarEstado;
+    private JButton btnRegistrar, btnModificar, btnCambiarEstado, btnLimpiar;
     private JTextField txtBusqueda;
     private String uuidSeleccionado = null;
+    private JComboBox<String> comboFiltroEstado;
 
     public MedicosPanel() {
         this.controller = new MedicoController();
@@ -29,7 +30,6 @@ public class MedicosPanel extends JPanel {
     }
 
     private void inicializarComponentes() {
-        // --- 1. Formulario Lateral (Oeste) ---
         JPanel panelFormulario = new JPanel(new GridLayout(9, 2, 5, 5));
         panelFormulario.setBorder(BorderFactory.createTitledBorder("Datos del Médico"));
 
@@ -76,21 +76,31 @@ public class MedicosPanel extends JPanel {
 
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
         txtBusqueda = new JTextField(20);
-        JButton btnBuscar = new JButton("Buscar");
-        btnBuscar.addActionListener(e -> buscarMedicos());
 
-        btnCambiarEstado = new JButton("Activar/Inactivar");
+        String[] opcionesEstado = {"Todos los Estados", "Solo Activos", "Solo Inactivos"};
+        comboFiltroEstado = new JComboBox<>(opcionesEstado);
+
+        JButton btnBuscar = new JButton("Buscar / Filtrar");
+        btnBuscar.addActionListener(e -> buscarYFiltrarMedicos());
+
+        btnCambiarEstado = new JButton("Activar / Desactivar");
         btnCambiarEstado.setEnabled(false);
         btnCambiarEstado.addActionListener(e -> cambiarEstado());
 
-        panelBusqueda.add(new JLabel("Buscar:"));
+        btnLimpiar = new JButton("Limpiar");
+        btnLimpiar.addActionListener(e -> limpiarFormulario());
+
+        panelBusqueda.add(new JLabel("Buscar (UUID/Nombre/Especialidad):"));
         panelBusqueda.add(txtBusqueda);
+        panelBusqueda.add(new JLabel("Estado:"));
+        panelBusqueda.add(comboFiltroEstado);
         panelBusqueda.add(btnBuscar);
         panelBusqueda.add(btnCambiarEstado);
+        panelBusqueda.add(btnLimpiar);
 
         panelCentral.add(panelBusqueda, BorderLayout.NORTH);
 
-        String[] columnas = {"UUID", "Nombres", "Apellidos", "Especialidad", "Horario", "Estado"};
+        String[] columnas = {"UUID", "Nombres", "Apellidos", "Especialidad", "Horario", "Estado", "Teléfono", "Correo"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -98,6 +108,14 @@ public class MedicosPanel extends JPanel {
             }
         };
         tablaMedicos = new JTable(modeloTabla);
+
+        tablaMedicos.getColumnModel().getColumn(6).setMinWidth(0);
+        tablaMedicos.getColumnModel().getColumn(6).setMaxWidth(0);
+        tablaMedicos.getColumnModel().getColumn(6).setPreferredWidth(0);
+
+        tablaMedicos.getColumnModel().getColumn(7).setMinWidth(0);
+        tablaMedicos.getColumnModel().getColumn(7).setMaxWidth(0);
+        tablaMedicos.getColumnModel().getColumn(7).setPreferredWidth(0);
 
         tablaMedicos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && tablaMedicos.getSelectedRow() != -1) {
@@ -150,7 +168,7 @@ public class MedicosPanel extends JPanel {
     }
 
     private void actualizarTabla(List<Medico> medicos) {
-        modeloTabla.setRowCount(0); // Limpiar tabla
+        modeloTabla.setRowCount(0);
         for (Medico m : medicos) {
             modeloTabla.addRow(new Object[]{
                     m.getUuid(),
@@ -158,7 +176,9 @@ public class MedicosPanel extends JPanel {
                     m.getApellidos(),
                     m.getEspecialidad(),
                     m.getHorarioInicio() + " - " + m.getHorarioFin(),
-                    m.isActivo() ? "Activo" : "Inactivo"
+                    m.isActivo() ? "Activo" : "Inactivo",
+                    m.getTelefono(),
+                    m.getCorreoElectronico()
             });
         }
     }
@@ -170,6 +190,16 @@ public class MedicosPanel extends JPanel {
         txtNombres.setText((String) modeloTabla.getValueAt(fila, 1));
         txtApellidos.setText((String) modeloTabla.getValueAt(fila, 2));
         txtEspecialidad.setText((String) modeloTabla.getValueAt(fila, 3));
+
+        String horarioCompleto = (String) modeloTabla.getValueAt(fila, 4);
+        String[] horas = horarioCompleto.split(" - ");
+        if (horas.length == 2) {
+            txtHorarioInicio.setText(horas[0]);
+            txtHorarioFin.setText(horas[1]);
+        }
+
+        txtTelefono.setText((String) modeloTabla.getValueAt(fila, 6));
+        txtCorreo.setText((String) modeloTabla.getValueAt(fila, 7));
 
         btnModificar.setEnabled(true);
         btnCambiarEstado.setEnabled(true);
@@ -225,6 +255,32 @@ public class MedicosPanel extends JPanel {
             cargarDatosEnTabla();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error al cambiar el estado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void buscarYFiltrarMedicos() {
+        try {
+            String criterio = txtBusqueda.getText().trim();
+            int filtroEstado = comboFiltroEstado.getSelectedIndex();
+
+            List<Medico> resultados;
+
+            if (criterio.isEmpty()) {
+                resultados = controller.consultarTodosLosMedicos();
+            } else {
+                resultados = controller.buscarMedicos(criterio);
+            }
+
+            if (filtroEstado == 1) { // Solo Activos
+                resultados = resultados.stream().filter(Medico::isActivo).collect(java.util.stream.Collectors.toList());
+            } else if (filtroEstado == 2) { // Solo Inactivos
+                resultados = resultados.stream().filter(m -> !m.isActivo()).collect(java.util.stream.Collectors.toList());
+            }
+
+            actualizarTabla(resultados);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error en la búsqueda: " + e.getMessage());
         }
     }
 
