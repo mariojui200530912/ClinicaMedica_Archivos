@@ -1,6 +1,9 @@
 package controllers;
 
+import models.Cita;
+import models.EstadoCita;
 import models.Medico;
+import persistence.CitaDAO;
 import persistence.MedicoDAO;
 import utils.LoggerSystem;
 
@@ -70,8 +73,21 @@ public class MedicoController {
 
         validarCamposObligatorios(nombres, apellidos, especialidad);
 
-        // TODO: Validar que la modificación del horario no genere inconsistencias con citas programadas.
-        // Esto requerirá buscar en CitaDAO si el médico tiene citas fuera del nuevo rango.
+        CitaDAO citaDAO = new CitaDAO();
+        List<Cita> citasDelMedico = citaDAO.buscarPorMedico(uuid);
+
+        for (Cita cita : citasDelMedico) {
+            if (cita.getEstado() == EstadoCita.PROGRAMADA) {
+                LocalTime horaCita = cita.getHoraInicio();
+
+                if (horaCita.isBefore(nuevoInicio) || horaCita.isAfter(nuevoFin)) {
+                    throw new Exception("Inconsistencia detectada: No se puede reducir el horario. " +
+                            "El médico ya tiene una cita PROGRAMADA el " + cita.getFecha() +
+                            " a las " + horaCita + ", la cual quedaría fuera del nuevo horario (" +
+                            nuevoInicio + " a " + nuevoFin + "). Reprograme o cancele la cita primero.");
+                }
+            }
+        }
 
         List<Medico> todos = medicoDAO.consultarTodos();
         Medico medicoExistente = todos.stream()
