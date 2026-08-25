@@ -134,7 +134,11 @@ public class CitaDAO extends AbstractFileDAO{
 
                 if (idLeido.equals(idPacienteBuscado)) {
                     raf.seek(posicionActual);
-                    resultados.add(leerRegistro(raf));
+                    Cita cita = leerRegistro(raf);
+
+                    if (!cita.isEliminado()) {
+                        resultados.add(cita);
+                    }
                 } else {
                     raf.seek(posicionActual + recordSize);
                 }
@@ -158,7 +162,11 @@ public class CitaDAO extends AbstractFileDAO{
 
                 if (medicoLeido.equals(uuidMedicoBuscado)) {
                     raf.seek(posicionActual);
-                    resultados.add(leerRegistro(raf));
+                    Cita cita = leerRegistro(raf);
+
+                    if (!cita.isEliminado()) {
+                        resultados.add(cita);
+                    }
                 } else {
                     raf.seek(posicionActual + recordSize);
                 }
@@ -214,7 +222,11 @@ public class CitaDAO extends AbstractFileDAO{
 
                 if (estadoLeido.equals(estadoStr)) {
                     raf.seek(posicionActual);
-                    resultados.add(leerRegistro(raf));
+                    Cita cita = leerRegistro(raf);
+
+                    if (!cita.isEliminado()) {
+                        resultados.add(cita);
+                    }
                 } else {
                     raf.seek(posicionActual + recordSize);
                 }

@@ -70,9 +70,36 @@ public class MedicoDAO extends AbstractFileDAO{
                 String uuidLeido = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID]);
 
                 if (uuidLeido.equals(medicoActualizado.getUuid())) {
-                    raf.seek(posicionActual); // Retroceder al inicio del registro exacto
-                    escribirRegistro(raf, medicoActualizado); // Sobrescribir
+                    raf.seek(posicionActual);
+                    escribirRegistro(raf, medicoActualizado);
                     return true;
+                }
+                raf.seek(posicionActual + recordSize);
+            }
+        }
+        return false;
+    }
+
+    public boolean cambiarEstadoMedico(String uuid, boolean nuevoEstado) throws IOException {
+        int offsetEstado = recordSize - BYTES_EXTRA;
+
+        try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "rw")) {
+            raf.seek(0);
+            while (raf.getFilePointer() < raf.length()) {
+                long posicionActual = raf.getFilePointer();
+                String uuidLeido = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_UUID]);
+
+                if (uuidLeido.equals(uuid)) {
+                    raf.seek(posicionActual + offsetEstado);
+
+                    boolean estadoActual = raf.readBoolean();
+
+                    if (estadoActual != nuevoEstado) {
+                        raf.seek(posicionActual + offsetEstado); // Retrocedemos el byte
+                        raf.writeBoolean(nuevoEstado); // Actualizamos
+                        return true;
+                    }
+                    return false; // El médico ya tenía ese estado
                 }
                 raf.seek(posicionActual + recordSize);
             }

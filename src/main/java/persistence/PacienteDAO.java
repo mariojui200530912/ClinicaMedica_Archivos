@@ -64,6 +64,8 @@ public class PacienteDAO extends AbstractFileDAO{
     }
 
     public boolean actualizarPaciente(Paciente paciente) throws IOException {
+        int offsetEliminado = recordSize - BYTES_EXTRA;
+
         try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "rw")) {
             raf.seek(0);
             while (raf.getFilePointer() < raf.length()) {
@@ -71,9 +73,14 @@ public class PacienteDAO extends AbstractFileDAO{
                 String idLeido = FixedLengthStringUtil.readFixedString(raf, LONGITUDES[IDX_ID]);
 
                 if (idLeido.equals(paciente.getIdentificacion())) {
-                    raf.seek(posicionActual);
-                    escribirRegistro(raf, paciente);
-                    return true;
+                    raf.seek(posicionActual + offsetEliminado);
+                    boolean estaEliminado = raf.readBoolean();
+
+                    if (!estaEliminado) {
+                        raf.seek(posicionActual);
+                        escribirRegistro(raf, paciente);
+                        return true;
+                    }
                 }
                 raf.seek(posicionActual + recordSize);
             }
@@ -92,8 +99,13 @@ public class PacienteDAO extends AbstractFileDAO{
 
                 if (idLeido.equals(identificacion)) {
                     raf.seek(posicionActual + offsetEliminado);
-                    raf.writeBoolean(true);
-                    return true;
+                    boolean estaEliminado = raf.readBoolean();
+
+                    if (!estaEliminado) {
+                        raf.seek(posicionActual + offsetEliminado);
+                        raf.writeBoolean(true);
+                        return true;
+                    }
                 }
                 raf.seek(posicionActual + recordSize);
             }

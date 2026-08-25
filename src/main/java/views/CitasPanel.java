@@ -207,7 +207,7 @@ public class CitasPanel extends JPanel{
         btnProgramar = new JButton("Programar Cita");
         btnProgramar.addActionListener(e -> programarCita());
 
-        btnModificar = new JButton("Modificar Textos");
+        btnModificar = new JButton("Modificar Cita");
         btnModificar.setEnabled(false);
         btnModificar.addActionListener(e -> modificarCita());
 
@@ -401,16 +401,26 @@ public class CitasPanel extends JPanel{
         int filaModelo = tablaCitas.convertRowIndexToModel(filaVisual);
         uuidCitaSeleccionada = (String) modeloTabla.getValueAt(filaModelo, 0);
 
+        txtInfoPaciente.setText("ID: " + modeloTabla.getValueAt(filaModelo, 1));
+        txtInfoMedico.setText("UUID: " + modeloTabla.getValueAt(filaModelo, 2));
+        txtFecha.setText(modeloTabla.getValueAt(filaModelo, 3).toString());
+        txtHora.setText(modeloTabla.getValueAt(filaModelo, 4).toString());
         txtMotivo.setText((String) modeloTabla.getValueAt(filaModelo, 5));
+
         Object obs = modeloTabla.getValueAt(filaModelo, 7);
         txtObservaciones.setText(obs != null ? obs.toString() : "");
 
+        txtFecha.setEditable(false);
+        txtHora.setEditable(false);
+        btnBuscarPaciente.setEnabled(false);
+        btnBuscarMedico.setEnabled(false);
+        btnProgramar.setEnabled(false);
+
+        txtMotivo.setEditable(true);
+        txtObservaciones.setEditable(true);
         btnModificar.setEnabled(true);
         btnCambiarEstado.setEnabled(true);
         btnEliminar.setEnabled(true);
-        btnProgramar.setEnabled(false);
-        btnBuscarPaciente.setEnabled(false);
-        btnBuscarMedico.setEnabled(false);
     }
 
     private void limpiarFormulario() {
@@ -423,13 +433,18 @@ public class CitasPanel extends JPanel{
         txtMotivo.setText("");
         txtObservaciones.setText("");
 
+        txtFecha.setEditable(true);
+        txtHora.setEditable(true);
+
         uuidCitaSeleccionada = null;
         btnModificar.setEnabled(false);
         btnCambiarEstado.setEnabled(false);
         btnEliminar.setEnabled(false);
+
         btnProgramar.setEnabled(true);
         btnBuscarPaciente.setEnabled(true);
         btnBuscarMedico.setEnabled(true);
+
         tablaCitas.clearSelection();
     }
 

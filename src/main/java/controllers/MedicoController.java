@@ -10,6 +10,7 @@ import utils.LoggerSystem;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MedicoController {
     private final MedicoDAO medicoDAO;
@@ -58,13 +59,13 @@ public class MedicoController {
     public List<Medico> consultarMedicosActivos() throws IOException {
         return medicoDAO.consultarTodos().stream()
                 .filter(Medico::isActivo)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public List<Medico> consultarMedicosInactivos() throws IOException {
         return medicoDAO.consultarTodos().stream()
                 .filter(m -> !m.isActivo())
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public void modificarMedico(String uuid, String nombres, String apellidos, String especialidad,
@@ -89,11 +90,10 @@ public class MedicoController {
             }
         }
 
-        List<Medico> todos = medicoDAO.consultarTodos();
-        Medico medicoExistente = todos.stream()
-                .filter(m -> m.getUuid().equals(uuid))
-                .findFirst()
-                .orElseThrow(() -> new Exception("Médico no encontrado."));
+        Medico medicoExistente = medicoDAO.buscarPorUuid(uuid);
+        if (medicoExistente == null) {
+            throw new Exception("Médico no encontrado.");
+        }
 
         medicoExistente.setNombres(nombres);
         medicoExistente.setApellidos(apellidos);
@@ -111,14 +111,7 @@ public class MedicoController {
     }
 
     public void cambiarEstadoMedico(String uuid, boolean nuevoEstado) throws Exception {
-        List<Medico> todos = medicoDAO.consultarTodos();
-        Medico medicoExistente = todos.stream()
-                .filter(m -> m.getUuid().equals(uuid))
-                .findFirst()
-                .orElseThrow(() -> new Exception("Médico no encontrado."));
-
-        medicoExistente.setActivo(nuevoEstado);
-        medicoDAO.actualizarMedico(medicoExistente);
+        medicoDAO.cambiarEstadoMedico(uuid, nuevoEstado);
         LoggerSystem.registrarAccion("MÉDICOS", "ACTUALIZACIÓN", "Se cambió el estado a " + (nuevoEstado ? "Activo" : "Inactivo") + " del médico UUID: " + uuid);
     }
 
